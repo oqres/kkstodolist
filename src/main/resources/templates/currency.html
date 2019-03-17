@@ -1,0 +1,124 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>Spring Boot Thymeleaf Hello World Example</title>
+    <script src="/js/jquery-3.3.1.min.js"></script>
+</head>
+
+<body>
+
+<main role="main" class="container">
+
+    <div class="starter-template">
+        <h1>환율계산</h1>
+        <h3>
+            <label>송금국가 : </label><span>미국 (USD)</span>
+        </h3>
+        <h3>
+            <label>수취국가 : </label>
+            <span>
+                <select id="select-code">
+                    <option th:each="entry: ${codelist.entrySet()}" th:value="${entry.key}" th:text="${entry.value}"
+                            th:selected="${entry.key} == 'USDKRW' ">
+                    </option>
+                </select>
+            </span>
+        </h3>
+        <h3>
+            <label>환율 : </label><span id="select-text" data-ref=""></span>
+        </h3>
+
+        <h3>
+            <label>송금액 : </label><span><input type="number" id="input-val"/> USD</span>
+        </h3>
+        <h3>
+            <input type="button" value="submit" id="submit-btn"/>
+        </h3>
+        <h3>
+            <span id="result-span"></span>
+        </h3>
+    </div>
+</main>
+
+<script>
+    $(document).ready(function () {
+
+        $("#select-code").change(function (e) {
+            var selected = $(this).val();
+            var su_fn = function (e) {
+                var resultVal = e;
+                var formatted = thirdComma((resultVal).toFixed(2));
+                var selectedText = " " + selected.substring(3, 6) + "/" + selected.substring(0, 3);
+                $("#select-text").text(formatted + selectedText).attr("data-ref", resultVal.toFixed(2));//반올림
+            }
+            // ajaxRequest("/realtime/"+selected, null, su_fn);
+            ajaxRequest("/" + selected, null, su_fn);
+        }).trigger("change");
+
+        $("#submit-btn").click(function (e) {
+            //submit 버튼 누를시에 송금액 출력 되도록 하면 마무리
+            // var currency = $(this).val();
+            var inputVal = $("#input-val").val();
+            if (isNumber(inputVal) && (inputVal > 0 && inputVal < 10000)) {
+                var selectedCode = $("#select-code").val();
+                var selectedVal = $("#select-text").attr("data-ref");
+
+                var resultText = parseFloat(Number(inputVal) * Number(selectedVal)).toFixed(2);
+                resultText = "수취금액은" + thirdComma(resultText) + " " + selectedCode.substring(3, 6) + " 입니다.";
+                $("#result-span").text(resultText);
+            } else {
+                $("#input-val").val("");
+                $("#result-span").text(""); //초기화
+                alert("송금액이 바르지 않습니다.");
+            }
+        });
+    });
+
+
+    /**따로 공통 모듈은 처리 하지 않았습니다.**/
+
+    //3자리
+    function thirdComma(str) {
+        str = String(str);
+        return str.replace(/(\d)(?=(?:\d{3})+(?!\d))/g, '$1,');
+    }
+
+
+    function isNumber(x) {
+        var reg = /^[+-]?\d*(\.?\d*)$/;
+        return reg.test(x);
+    }
+
+
+    function ajaxRequest(url, param, scsfnt, method, contentType) {
+        if (contentType === "application/json" && param !== null && typeof param === 'object') {
+            param = JSON.stringify(param);
+        }
+        //contentType default 선언
+        contentType = contentType || "application/x-www-form-urlencoded";
+        contentType += "; charset=UTF-8";
+        $.ajax({
+            url: url
+            , data: param
+            , type: method || "POST"
+            , contentType: contentType
+            , success: function (response) {
+                scsfnt(response);
+            }
+            , error: function (xhr, status, error) {
+                alert(xhr.responseText);
+            }
+            , complete: function () {
+            }
+        });
+    }
+
+
+</script>
+
+
+</body>
+</html>
